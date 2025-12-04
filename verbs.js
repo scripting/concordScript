@@ -1,137 +1,6 @@
-var feedLand = { //9/12/22 by DW
-	config: {
-		urlServer: "http://api.feedland.org/"
-		},
-	getUserPrefs: function (screenname, urlServer=feedLand.config.urlServer) {
-		return new Promise (function (resolve, reject) {
-			servercall ("getuserprefs", {screenname}, true, function (err, data) {
-				if (err) {
-					reject (err);
-					}
-				else {
-					resolve (data); 
-					}
-				}, urlServer);
-			});
-		},
-	setUserPrefs: function (thePrefs, urlServer=feedLand.config.urlServer) {
-		return new Promise (function (resolve, reject) {
-			var jsontext = jsonStringify (thePrefs);
-			servercall ("sendprefs", {prefs: jsontext}, true, function (err, data) {
-				if (err) {
-					reject (err);
-					}
-				else {
-					resolve (data); 
-					}
-				}, urlServer);
-			});
-		
-		},
-	checkFeedNow: function (feedUrl, urlServer=feedLand.config.urlServer) {
-		return new Promise (function (resolve, reject) {
-			servercall ("checkfeednow", {url: feedUrl}, true, function (err, data) {
-				if (err) {
-					reject (err);
-					}
-				else {
-					resolve (data); 
-					}
-				}, urlServer);
-			});
-		},
-	
-	getUserCategories: function (screenname, urlServer=feedLand.config.urlServer) {
-		return new Promise (function (resolve, reject) {
-			servercall ("getuserprefs", {screenname}, true, function (err, data) {
-				if (err) {
-					reject (err);
-					}
-				else {
-					var theCategories = {
-						screenname,
-						categories: data.categories,
-						homePageCategories: data.homePageCategories,
-						newsproductCategories: data.newsproductCategoryList
-						};
-					resolve (theCategories); 
-					}
-				}, urlServer);
-			});
-		},
-	getOneUserCategory: function (screenname, catname, urlServer=feedLand.config.urlServer) {
-		return new Promise (function (resolve, reject) {
-			servercall ("getfeedsincategory", {screenname, catname}, true, function (err, data) {
-				if (err) {
-					console.log (err.message);
-					reject (err);
-					}
-				else {
-					resolve (data); 
-					}
-				}, urlServer);
-			});
-		},
-	
-	getFollowers: function (feedUrl, urlServer=feedLand.config.urlServer) {
-		return new Promise (function (resolve, reject) {
-			servercall ("getfollowers", {url: feedUrl}, true, function (err, data) {
-				if (err) {
-					reject (err);
-					}
-				else {
-					console.log ("data == " + jsonStringify (data));
-					resolve (data); 
-					}
-				}, urlServer);
-			});
-		},
-	getSubscription: function (feedUrl, urlServer=feedLand.config.urlServer) {
-		return new Promise (function (resolve, reject) {
-			servercall ("isusersubscribed", {url: feedUrl}, true, function (err, data) {
-				if (err) {
-					reject (err);
-					}
-				else {
-					if (data.flSubscribed) {
-						var sub = data.theSubscription;
-						if (sub.categories !== undefined) { //9/6/22 by DW
-							sub.categories = JSON.parse (sub.categories);
-							}
-						sub.screenname = sub.listName;
-						delete sub.listName;
-						resolve (sub);
-						}
-					else {
-						resolve (undefined);
-						}
-					}
-				}, urlServer);
-			});
-		},
-	subscribe: function (feedUrl, urlServer=feedLand.config.urlServer) {
-		return new Promise (function (resolve, reject) {
-			servercall ("subscribe", {url: feedUrl}, true, function (err, data) {
-				if (err) {
-					reject (err);
-					}
-				else {
-					resolve (data); 
-					}
-				}, urlServer);
-			});
-		},
-	unsubscribe: function (feedUrl, urlServer=feedLand.config.urlServer) {
-		return new Promise (function (resolve, reject) {
-			servercall ("unsubscribe", {url: feedUrl}, true, function (err, data) {
-				if (err) {
-					reject (err);
-					}
-				else {
-					resolve (data); 
-					}
-				}, urlServer);
-			});
+var number = {
+	random: function (lower, upper) {
+		return (random (lower, upper));
 		}
 	}
 var op = {
@@ -347,72 +216,6 @@ var op = {
 	visitToSummit: function (callback) {
 		return ($(opGetActiveOutliner ()).concord ().op.visitToSummit (callback));
 		},
-	}
-
-
-var number = {
-	random: function (lower, upper) {
-		return (random (lower, upper));
-		}
-	}
-var oldSchool = {
-	buildBlog: function (flFullData=false) {
-		return new Promise (function (resolve, reject) {
-			var url = "http://drummercms.scripting.com/build?blog=" + twGetScreenName ();
-			httpRequest (url, undefined, undefined, function (err, jsontext) {
-				if (err) {
-					console.log ("There was an error building the blog: " + err.message);
-					reject (err);
-					}
-				else {
-					try {
-						var jstruct = JSON.parse (jsontext);
-						if (flFullData) {
-							resolve (jstruct); 
-							}
-						else {
-							resolve (jstruct.baseUrl); 
-							}
-						}
-					catch (err) {
-						console.log ("There was an error building the blog: " + err.message);
-						reject (err);
-						}
-					}
-				});
-			});
-		},
-	getCursorLink: function () {
-		var headers = opGetHeaders (), urlWebsite;
-		if (headers.urlBlogWebsite !== undefined) {
-			urlWebsite = headers.urlBlogWebsite;
-			}
-		else {
-			return (undefined);
-			}
-		function pad (n) {
-			return (padWithZeros (n, 2));
-			}
-		function getPostNode () {
-			var barcursor = opGetBarCursor (), postNode = barcursor;
-			barcursor.visitToSummit (function (theNode) {
-				if (theNode.attributes.getOne ("type") == "calendarDay") {
-					return (false);
-					}
-				postNode = theNode;
-				return (true); //keep looking
-				});
-			return (postNode);
-			}
-		var whenCursor = new Date (opGetOneAtt ("created"));
-		var postNode = getPostNode ();
-		var whenPost = new Date (postNode.attributes.getOne ("created"));
-		var timeZoneOffset = (headers.timeZoneOffset === undefined) ? "-5" : headers.timeZoneOffset;
-		whenPost = date.convertToTimeZone (whenPost, timeZoneOffset);
-		var url = urlWebsite + whenPost.getFullYear () + "/" + pad (whenPost.getMonth () + 1) + "/" + pad (whenPost.getDate ()) + ".html";
-		url += "#a" + pad (whenCursor.getUTCHours ()) + pad (whenCursor.getUTCMinutes ()) + pad (whenCursor.getUTCSeconds ());
-		return (url)
-		}
 	}
 var drummer = {
 	runScript: function (scripttext) {
@@ -1156,6 +959,142 @@ var webBrowser = {
 		return (true);
 		}
 	}
+var feedLand = { //9/12/22 by DW
+	config: {
+		urlServer: "http://api.feedland.org/"
+		},
+	getUserPrefs: function (screenname, urlServer=feedLand.config.urlServer) {
+		return new Promise (function (resolve, reject) {
+			servercall ("getuserprefs", {screenname}, true, function (err, data) {
+				if (err) {
+					reject (err);
+					}
+				else {
+					resolve (data); 
+					}
+				}, urlServer);
+			});
+		},
+	setUserPrefs: function (thePrefs, urlServer=feedLand.config.urlServer) {
+		return new Promise (function (resolve, reject) {
+			var jsontext = jsonStringify (thePrefs);
+			servercall ("sendprefs", {prefs: jsontext}, true, function (err, data) {
+				if (err) {
+					reject (err);
+					}
+				else {
+					resolve (data); 
+					}
+				}, urlServer);
+			});
+		
+		},
+	checkFeedNow: function (feedUrl, urlServer=feedLand.config.urlServer) {
+		return new Promise (function (resolve, reject) {
+			servercall ("checkfeednow", {url: feedUrl}, true, function (err, data) {
+				if (err) {
+					reject (err);
+					}
+				else {
+					resolve (data); 
+					}
+				}, urlServer);
+			});
+		},
+	
+	getUserCategories: function (screenname, urlServer=feedLand.config.urlServer) {
+		return new Promise (function (resolve, reject) {
+			servercall ("getuserprefs", {screenname}, true, function (err, data) {
+				if (err) {
+					reject (err);
+					}
+				else {
+					var theCategories = {
+						screenname,
+						categories: data.categories,
+						homePageCategories: data.homePageCategories,
+						newsproductCategories: data.newsproductCategoryList
+						};
+					resolve (theCategories); 
+					}
+				}, urlServer);
+			});
+		},
+	getOneUserCategory: function (screenname, catname, urlServer=feedLand.config.urlServer) {
+		return new Promise (function (resolve, reject) {
+			servercall ("getfeedsincategory", {screenname, catname}, true, function (err, data) {
+				if (err) {
+					console.log (err.message);
+					reject (err);
+					}
+				else {
+					resolve (data); 
+					}
+				}, urlServer);
+			});
+		},
+	
+	getFollowers: function (feedUrl, urlServer=feedLand.config.urlServer) {
+		return new Promise (function (resolve, reject) {
+			servercall ("getfollowers", {url: feedUrl}, true, function (err, data) {
+				if (err) {
+					reject (err);
+					}
+				else {
+					console.log ("data == " + jsonStringify (data));
+					resolve (data); 
+					}
+				}, urlServer);
+			});
+		},
+	getSubscription: function (feedUrl, urlServer=feedLand.config.urlServer) {
+		return new Promise (function (resolve, reject) {
+			servercall ("isusersubscribed", {url: feedUrl}, true, function (err, data) {
+				if (err) {
+					reject (err);
+					}
+				else {
+					if (data.flSubscribed) {
+						var sub = data.theSubscription;
+						if (sub.categories !== undefined) { //9/6/22 by DW
+							sub.categories = JSON.parse (sub.categories);
+							}
+						sub.screenname = sub.listName;
+						delete sub.listName;
+						resolve (sub);
+						}
+					else {
+						resolve (undefined);
+						}
+					}
+				}, urlServer);
+			});
+		},
+	subscribe: function (feedUrl, urlServer=feedLand.config.urlServer) {
+		return new Promise (function (resolve, reject) {
+			servercall ("subscribe", {url: feedUrl}, true, function (err, data) {
+				if (err) {
+					reject (err);
+					}
+				else {
+					resolve (data); 
+					}
+				}, urlServer);
+			});
+		},
+	unsubscribe: function (feedUrl, urlServer=feedLand.config.urlServer) {
+		return new Promise (function (resolve, reject) {
+			servercall ("unsubscribe", {url: feedUrl}, true, function (err, data) {
+				if (err) {
+					reject (err);
+					}
+				else {
+					resolve (data); 
+					}
+				}, urlServer);
+			});
+		}
+	}
 var fargo = { //11/29/13 by DW
 	version: function () {
 		return (appConsts.version);
@@ -1165,6 +1104,65 @@ var fargo = { //11/29/13 by DW
 		},
 	productnameForDisplay: function () {
 		return (appConsts.productnameForDisplay);
+		}
+	}
+var oldSchool = {
+	buildBlog: function (flFullData=false) {
+		return new Promise (function (resolve, reject) {
+			var url = "http://drummercms.scripting.com/build?blog=" + twGetScreenName ();
+			httpRequest (url, undefined, undefined, function (err, jsontext) {
+				if (err) {
+					console.log ("There was an error building the blog: " + err.message);
+					reject (err);
+					}
+				else {
+					try {
+						var jstruct = JSON.parse (jsontext);
+						if (flFullData) {
+							resolve (jstruct); 
+							}
+						else {
+							resolve (jstruct.baseUrl); 
+							}
+						}
+					catch (err) {
+						console.log ("There was an error building the blog: " + err.message);
+						reject (err);
+						}
+					}
+				});
+			});
+		},
+	getCursorLink: function () {
+		var headers = opGetHeaders (), urlWebsite;
+		if (headers.urlBlogWebsite !== undefined) {
+			urlWebsite = headers.urlBlogWebsite;
+			}
+		else {
+			return (undefined);
+			}
+		function pad (n) {
+			return (padWithZeros (n, 2));
+			}
+		function getPostNode () {
+			var barcursor = opGetBarCursor (), postNode = barcursor;
+			barcursor.visitToSummit (function (theNode) {
+				if (theNode.attributes.getOne ("type") == "calendarDay") {
+					return (false);
+					}
+				postNode = theNode;
+				return (true); //keep looking
+				});
+			return (postNode);
+			}
+		var whenCursor = new Date (opGetOneAtt ("created"));
+		var postNode = getPostNode ();
+		var whenPost = new Date (postNode.attributes.getOne ("created"));
+		var timeZoneOffset = (headers.timeZoneOffset === undefined) ? "-5" : headers.timeZoneOffset;
+		whenPost = date.convertToTimeZone (whenPost, timeZoneOffset);
+		var url = urlWebsite + whenPost.getFullYear () + "/" + pad (whenPost.getMonth () + 1) + "/" + pad (whenPost.getDate ()) + ".html";
+		url += "#a" + pad (whenCursor.getUTCHours ()) + pad (whenCursor.getUTCMinutes ()) + pad (whenCursor.getUTCSeconds ());
+		return (url)
 		}
 	}
 
